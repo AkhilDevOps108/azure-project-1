@@ -97,10 +97,11 @@ resource "azurerm_key_vault" "main" {
 # SQL SERVER + DB
 ############################################
 
+# === SQL SERVER + DB ===
 resource "azurerm_mssql_server" "main" {
   name                         = "${var.prefix}-sqlsrv"
   resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
+  location                     = "East US"   # ✅ Changed region only for SQL
   version                      = "12.0"
   administrator_login          = "sqladmin"
   administrator_login_password = "P@ssword1234!"
@@ -111,6 +112,7 @@ resource "azurerm_mssql_database" "main" {
   server_id = azurerm_mssql_server.main.id
   sku_name  = "S0"
 }
+
 
 ############################################
 # FUNCTION APP

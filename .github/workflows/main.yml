@@ -11,7 +11,7 @@ env:
   TF_WORKING_DIR: "terraform"
   APP_WORKING_DIR: "src"
   AZURE_RG: "sentapi-rg" # Must match your terraform main.tf
-  AZURE_APP_NAME: "sentapi-plan" # Must match your terraform main.tf
+  AZURE_APP_NAME: "sentapi-func" # Must match your terraform main.tf
 
 # jobs:
 #   ###########################################

@@ -6,7 +6,7 @@ on:
     branches:
       - main
 
-# Set environment variables for all jobs
+# Set environment variables for all jobsv
 env:
   TF_WORKING_DIR: "terraform"
   APP_WORKING_DIR: "src"

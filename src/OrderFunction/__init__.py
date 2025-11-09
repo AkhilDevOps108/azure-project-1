@@ -1,60 +1,42 @@
+import logging
 import os
-import json
 import azure.functions as func
 import pyodbc
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Processing request for /api/orders")
+
     try:
-        # Access Key Vault
-        key_vault_name = os.environ["KEYVAULT_NAME"]
-        kv_uri = f"https://{key_vault_name}.vault.azure.net"
+        # 1️⃣ Authenticate to Key Vault
+        keyvault_url = os.environ["KEYVAULT_URI"]  # e.g. "https://sentapi-kv.vault.azure.net/"
         credential = DefaultAzureCredential()
-        client = SecretClient(vault_url=kv_uri, credential=credential)
+        client = SecretClient(vault_url=keyvault_url, credential=credential)
 
-        # Get SQL secrets from Key Vault
-        db_user = client.get_secret("db-username").value
-        db_pass = client.get_secret("db-password").value
-        db_server = client.get_secret("db-server").value
-        db_name = client.get_secret("db-name").value
+        # 2️⃣ Fetch SQL connection string from Key Vault
+        sql_secret = client.get_secret("SqlConnectionString").value
 
-        # Build connection string
-        conn_str = (
-            f"Driver={{ODBC Driver 17 for SQL Server}};"
-            f"Server=tcp:{db_server},1433;"
-            f"Database={db_name};"
-            f"Uid={db_user};"
-            f"Pwd={db_pass};"
-            "Encrypt=yes;"
-            "TrustServerCertificate=no;"
-            "Connection Timeout=30;"
-        )
+        # 3️⃣ Connect to Azure SQL
+        conn = pyodbc.connect(sql_secret)
+        cursor = conn.cursor()
 
-        # Parse input
-        req_body = req.get_json()
-        name = req_body.get("name")
-        item = req_body.get("item")
-        qty = req_body.get("quantity")
+        # 4️⃣ Execute query (simulate fetching orders)
+        cursor.execute("SELECT TOP 5 OrderID, CustomerName, TotalAmount FROM Orders")
+        rows = cursor.fetchall()
 
-        # Insert into SQL
-        with pyodbc.connect(conn_str) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO Orders (CustomerName, Item, Quantity) VALUES (?, ?, ?)",
-                (name, item, qty),
-            )
-            conn.commit()
+        # 5️⃣ Prepare response JSON
+        results = [
+            {"OrderID": r[0], "CustomerName": r[1], "TotalAmount": float(r[2])}
+            for r in rows
+        ]
 
         return func.HttpResponse(
-            json.dumps({"message": f"Order placed by {name} for {qty}x {item}."}),
-            mimetype="application/json",
-            status_code=200
+            body=str(results),
+            status_code=200,
+            mimetype="application/json"
         )
 
     except Exception as e:
-        return func.HttpResponse(
-            json.dumps({"error": str(e)}),
-            mimetype="application/json",
-            status_code=500
-        )
+        logging.error(f"Error: {str(e)}")
+        return func.HttpResponse(f"Error occurred: {str(e)}", status_code=500)

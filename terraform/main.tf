@@ -98,6 +98,11 @@ resource "azurerm_key_vault" "main" {
 ############################################
 
 # === SQL SERVER + DB ===
+
+resource "random_id" "sql_suffix" {
+  byte_length = 2
+}
+
 resource "azurerm_mssql_server" "main" {
   name                         = "${var.prefix}-sqlsrv${random_id.suffix.hex}"  # ✅ unique name
   resource_group_name          = azurerm_resource_group.main.name

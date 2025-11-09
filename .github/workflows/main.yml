@@ -1,4 +1,4 @@
-name: Deploy Project 1
+name: Deploy Azure Function App
 
 on:
   push:
@@ -6,52 +6,34 @@ on:
       - main
 
 env:
-  TF_WORKING_DIR: "terraform"
-  APP_WORKING_DIR: "src"
   AZURE_RG: "sentapi-rg"
-  AZURE_FUNC_NAME: "sentapi-func"  # ✅ Function App name (not webapp)
-  PYTHON_VERSION: "3.9"
+  AZURE_APP_NAME: "sentapi-func"
+  APP_WORKING_DIR: "src"
 
 jobs:
-  ###########################################
-  # JOB 2: Deploy Python Azure Function App
-  ###########################################
-  deploy-application:
-    name: "Deploy Python Azure Function"
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Checkout code
       - name: "Checkout code"
         uses: actions/checkout@v3
 
-      # 2️⃣ Azure Login
       - name: "Azure Login"
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3️⃣ Setup Python
       - name: "Setup Python"
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: "3.9"
 
-      # 4️⃣ Install dependencies (into src folder)
-      - name: "Install dependencies"
+      - name: "Zip and Deploy Function App"
         run: |
           cd ${{ env.APP_WORKING_DIR }}
           pip install -r requirements.txt -t .
-
-      # 5️⃣ Deploy to Azure Function App
-      - name: "Deploy to Azure Function App"
-        uses: Azure/functions-action@v1
-        with:
-          app-name: ${{ env.AZURE_FUNC_NAME }}
-          package: ${{ env.APP_WORKING_DIR }}
-
-      # 6️⃣ Print Function URL
-      - name: "Print Function URL"
-        run: |
-          echo "✅ Deployment complete!"
-          echo "Visit your function at: https://${{ env.AZURE_FUNC_NAME }}.azurewebsites.net/api/OrderFunction"
+          zip -r ../app.zip .
+          cd ..
+          az functionapp deployment source config-zip \
+            -g ${{ env.AZURE_RG }} \
+            -n ${{ env.AZURE_APP_NAME }} \
+            --src app.zip

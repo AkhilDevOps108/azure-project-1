@@ -23,9 +23,8 @@ resource "random_id" "suffix" {
 }
 
 # === 1. RESOURCE GROUP ===
-resource "azurerm_resource_group" "main" {
-  name     = "${var.prefix}-rg"
-  location = var.location
+data "azurerm_resource_group" "main" {
+  name = "sentimentapi-rg"
 }
 
 # === 2. APP SERVICE PLAN ===

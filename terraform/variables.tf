@@ -4,8 +4,9 @@ variable "prefix" {
   default     = "sentimentapi"
 }
 
+
 variable "location" {
   description = "Azure region to deploy resources"
   type        = string
-  default     = "East US"
+  default     = "West Europe" # ✅ change this
 }

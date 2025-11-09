@@ -101,7 +101,7 @@ resource "azurerm_key_vault" "main" {
 resource "azurerm_mssql_server" "main" {
   name                         = "${var.prefix}-sqlsrv${random_id.suffix.hex}"  # ✅ unique name
   resource_group_name          = azurerm_resource_group.main.name
-  location                     = "East US"
+  location                     = "West US 2"
   version                      = "12.0"
   administrator_login          = "sqladmin"
   administrator_login_password = "P@ssword1234!"

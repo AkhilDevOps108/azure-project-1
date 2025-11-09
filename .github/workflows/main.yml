@@ -67,6 +67,8 @@ env:
 #           echo "app_gateway_public_ip=$GATEWAY_IP" >> $GITHUB_OUTPUT
 #         working-directory: ${{ env.TF_WORKING_DIR }}
 
+
+jobs:
   ###########################################
   # JOB 2: Deploy Application
   ###########################################

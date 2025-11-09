@@ -104,7 +104,7 @@ resource "random_id" "sql_suffix" {
 }
 
 resource "azurerm_mssql_server" "main" {
-  name                         = "sqlserverapi123"  # ✅ unique name
+  name                         = "sqlserverapiakhil12345"  # ✅ unique name
   resource_group_name          = azurerm_resource_group.main.name
   location                     = "West US 2"
   version                      = "12.0"

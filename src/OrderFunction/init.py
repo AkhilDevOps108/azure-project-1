@@ -11,7 +11,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         # Authenticate to Key Vault
-        keyvault_url = os.environ["KEYVAULT_URI"]
+        keyvault_url = os.environ["KEYVAULT_URL"]
         credential = DefaultAzureCredential()
         client = SecretClient(vault_url=keyvault_url, credential=credential)
         sql_secret = client.get_secret("SqlConnectionString").value

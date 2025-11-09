@@ -5,3 +5,4 @@ azure-functions
 azure-identity
 azure-keyvault-secrets
 pyodbc
+pyodbc==4.0.39

@@ -76,8 +76,8 @@ jobs:
     name: "Deploy Application (Python)"
     runs-on: ubuntu-latest
     
-    # This job "needs" the first one to finish
-    needs: deploy-infrastructure
+    # # This job "needs" the first one to finish
+    # needs: deploy-infrastructure
 
     steps:
       # 1. Check out the code

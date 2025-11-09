@@ -1,0 +1,116 @@
+name: Deploy Project 1
+
+# Trigger this workflow on a push to the main branch
+on:
+  push:
+    branches:
+      - main
+
+# Set environment variables for all jobs
+env:
+  TF_WORKING_DIR: "terraform"
+  APP_WORKING_DIR: "src"
+  AZURE_RG: "proj1-rg" # Must match your terraform main.tf
+  AZURE_APP_NAME: "proj1-webapp" # Must match your terraform main.tf
+
+jobs:
+  ###########################################
+  # JOB 1: Deploy Infrastructure
+  ###########################################
+  deploy-infrastructure:
+    name: "Deploy Infrastructure (Terraform)"
+    runs-on: ubuntu-latest
+    
+    outputs:
+      # This output will be used by the next job
+      app_gateway_ip: ${{ steps.tf-apply.outputs.app_gateway_public_ip }}
+
+    steps:
+      # 1. Check out the code
+      - name: "Checkout code"
+        uses: actions/checkout@v3
+
+      # 2. Log in to Azure using the Service Principal secret
+      - name: "Azure Login"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 3. Setup Terraform
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v2
+
+      # 4. Terraform Init
+      # Configures the backend, using the storage account you made in Phase 1
+      - name: "Terraform Init"
+        run: |
+          terraform init \
+          -backend-config="resource_group_name=tf-state-rg" \
+          -backend-config="storage_account_name=tfstatepm99" \
+          -backend-config="container_name=tfstate" \
+          -backend-config="key=project1.tfstate"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      # 5. Terraform Plan
+      - name: "Terraform Plan"
+        run: terraform plan -out=tfplan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      # 6. Terraform Apply
+      - name: "Terraform Apply"
+        id: tf-apply # Give this step an ID
+        run: |
+          terraform apply -auto-approve tfplan
+          
+          # Get the IP output and set it for the job
+          GATEWAY_IP=$(terraform output -raw app_gateway_public_ip)
+          echo "app_gateway_public_ip=$GATEWAY_IP" >> $GITHUB_OUTPUT
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+  ###########################################
+  # JOB 2: Deploy Application
+  ###########################################
+  deploy-application:
+    name: "Deploy Application (Python)"
+    runs-on: ubuntu-latest
+    
+    # This job "needs" the first one to finish
+    needs: deploy-infrastructure
+
+    steps:
+      # 1. Check out the code
+      - name: "Checkout code"
+        uses: actions/checkout@v3
+
+      # 2. Log in to Azure
+      - name: "Azure Login"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 3. Setup Python
+      - name: "Setup Python 3.9"
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 4. Install dependencies and zip the app
+      - name: "Install dependencies and Zip"
+        run: |
+          cd ${{ env.APP_WORKING_DIR }}
+          pip install -r requirements.txt -t .
+          zip -r ../app.zip .
+        
+      # 5. Deploy the zip file to App Service
+      - name: "Deploy to App Service"
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_APP_NAME }}
+          resource-group-name: ${{ env.AZURE_RG }}
+          package: "app.zip"
+
+      # 6. Print the final URL
+      - name: "Print App URL"
+        run: |
+          echo "Your app is deployed!"
+          echo "Access it at: http://${{ needs.deploy-infrastructure.outputs.app_gateway_ip }}"

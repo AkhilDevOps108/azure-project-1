@@ -101,6 +101,12 @@ resource "azurerm_linux_function_app" "main" {
   service_plan_id     = azurerm_service_plan.main.id
   https_only          = true
 
+
+  # ✅ Mandatory storage account
+  storage_account_name       = azurerm_storage_account.main.name
+  storage_account_access_key = azurerm_storage_account.main.primary_access_key
+
+  
   identity {
     type = "SystemAssigned"
   }

@@ -1,118 +1,57 @@
 name: Deploy Project 1
 
-# Trigger this workflow on a push to the main branch
 on:
   push:
     branches:
       - main
 
-# Set environment variables for all jobsv
 env:
   TF_WORKING_DIR: "terraform"
   APP_WORKING_DIR: "src"
-  AZURE_RG: "sentapi-rg" # Must match your terraform main.tf
-  AZURE_APP_NAME: "sentapi-func" # Must match your terraform main.tf
-
-# jobs:
-#   ###########################################
-#   # JOB 1: Deploy Infrastructure
-#   ###########################################
-#   deploy-infrastructure:
-#     name: "Deploy Infrastructure (Terraform)"
-#     runs-on: ubuntu-latest
-    
-#     outputs:
-#       # This output will be used by the next job
-#       app_gateway_ip: ${{ steps.tf-apply.outputs.app_gateway_public_ip }}
-
-#     steps:
-#       # 1. Check out the code
-#       - name: "Checkout code"
-#         uses: actions/checkout@v3
-
-#       # 2. Log in to Azure using the Service Principal secret
-#       - name: "Azure Login"
-#         uses: azure/login@v1
-#         with:
-#           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-#       # 3. Setup Terraform
-#       - name: "Setup Terraform"
-#         uses: hashicorp/setup-terraform@v2
-
-#       # 4. Terraform Init
-#       # Configures the backend, using the storage account you made in Phase 1
-#       - name: "Terraform Init"
-#         run: |
-#           terraform init \
-#           -backend-config="resource_group_name=tf-state-rg" \
-#           -backend-config="storage_account_name=tfstatepm99" \
-#           -backend-config="container_name=tfstate" \
-#           -backend-config="key=project1.tfstate"
-#         working-directory: ${{ env.TF_WORKING_DIR }}
-
-#       # 5. Terraform Plan
-#       - name: "Terraform Plan"
-#         run: terraform plan -out=tfplan
-#         working-directory: ${{ env.TF_WORKING_DIR }}
-
-#       # 6. Terraform Apply
-#       - name: "Terraform Apply"
-#         id: tf-apply # Give this step an ID
-#         run: |
-#           terraform apply -auto-approve tfplan
-          
-#           # Get the IP output and set it for the job
-#           GATEWAY_IP=$(terraform output -raw app_gateway_public_ip)
-#           echo "app_gateway_public_ip=$GATEWAY_IP" >> $GITHUB_OUTPUT
-#         working-directory: ${{ env.TF_WORKING_DIR }}
-
+  AZURE_RG: "sentapi-rg"
+  AZURE_FUNC_NAME: "sentapi-func"  # ✅ Function App name (not webapp)
+  PYTHON_VERSION: "3.9"
 
 jobs:
   ###########################################
-  # JOB 2: Deploy Application
+  # JOB 2: Deploy Python Azure Function App
   ###########################################
   deploy-application:
-    name: "Deploy Application (Python)"
+    name: "Deploy Python Azure Function"
     runs-on: ubuntu-latest
-    
-    # # This job "needs" the first one to finish
-    # needs: deploy-infrastructure
 
     steps:
-      # 1. Check out the code
+      # 1️⃣ Checkout code
       - name: "Checkout code"
         uses: actions/checkout@v3
 
-      # 2. Log in to Azure
+      # 2️⃣ Azure Login
       - name: "Azure Login"
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3. Setup Python
-      - name: "Setup Python 3.9"
+      # 3️⃣ Setup Python
+      - name: "Setup Python"
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      # 4. Install dependencies and zip the app
-      - name: "Install dependencies and Zip"
+      # 4️⃣ Install dependencies (into src folder)
+      - name: "Install dependencies"
         run: |
           cd ${{ env.APP_WORKING_DIR }}
           pip install -r requirements.txt -t .
-          zip -r ../app.zip .
-        
-      # 5. Deploy the zip file to App Service
-      - name: "Deploy to App Service"
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_APP_NAME }}
-          resource-group-name: ${{ env.AZURE_RG }}
-          package: "app.zip"
 
-      # 6. Print the final URL
-      - name: "Print App URL"
+      # 5️⃣ Deploy to Azure Function App
+      - name: "Deploy to Azure Function App"
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNC_NAME }}
+          package: ${{ env.APP_WORKING_DIR }}
+
+      # 6️⃣ Print Function URL
+      - name: "Print Function URL"
         run: |
-          echo "Your app is deployed!"
-          echo "Access it at: http://${{ needs.deploy-infrastructure.outputs.app_gateway_ip }}"
+          echo "✅ Deployment complete!"
+          echo "Visit your function at: https://${{ env.AZURE_FUNC_NAME }}.azurewebsites.net/api/OrderFunction"

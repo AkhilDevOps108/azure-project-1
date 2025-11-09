@@ -1,8 +1,4 @@
-flask
-pyodbc
-gunicorn
 azure-functions
-azure-identity
-azure-keyvault-secrets
-pyodbc
+azure-identity==1.15.0
+azure-keyvault-secrets==4.7.0
 pyodbc==4.0.39

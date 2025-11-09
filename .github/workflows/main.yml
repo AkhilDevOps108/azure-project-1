@@ -13,59 +13,59 @@ env:
   AZURE_RG: "proj1-rg" # Must match your terraform main.tf
   AZURE_APP_NAME: "proj1-webapp" # Must match your terraform main.tf
 
-jobs:
-  ###########################################
-  # JOB 1: Deploy Infrastructure
-  ###########################################
-  deploy-infrastructure:
-    name: "Deploy Infrastructure (Terraform)"
-    runs-on: ubuntu-latest
+# jobs:
+#   ###########################################
+#   # JOB 1: Deploy Infrastructure
+#   ###########################################
+#   deploy-infrastructure:
+#     name: "Deploy Infrastructure (Terraform)"
+#     runs-on: ubuntu-latest
     
-    outputs:
-      # This output will be used by the next job
-      app_gateway_ip: ${{ steps.tf-apply.outputs.app_gateway_public_ip }}
+#     outputs:
+#       # This output will be used by the next job
+#       app_gateway_ip: ${{ steps.tf-apply.outputs.app_gateway_public_ip }}
 
-    steps:
-      # 1. Check out the code
-      - name: "Checkout code"
-        uses: actions/checkout@v3
+#     steps:
+#       # 1. Check out the code
+#       - name: "Checkout code"
+#         uses: actions/checkout@v3
 
-      # 2. Log in to Azure using the Service Principal secret
-      - name: "Azure Login"
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+#       # 2. Log in to Azure using the Service Principal secret
+#       - name: "Azure Login"
+#         uses: azure/login@v1
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3. Setup Terraform
-      - name: "Setup Terraform"
-        uses: hashicorp/setup-terraform@v2
+#       # 3. Setup Terraform
+#       - name: "Setup Terraform"
+#         uses: hashicorp/setup-terraform@v2
 
-      # 4. Terraform Init
-      # Configures the backend, using the storage account you made in Phase 1
-      - name: "Terraform Init"
-        run: |
-          terraform init \
-          -backend-config="resource_group_name=tf-state-rg" \
-          -backend-config="storage_account_name=tfstatepm99" \
-          -backend-config="container_name=tfstate" \
-          -backend-config="key=project1.tfstate"
-        working-directory: ${{ env.TF_WORKING_DIR }}
+#       # 4. Terraform Init
+#       # Configures the backend, using the storage account you made in Phase 1
+#       - name: "Terraform Init"
+#         run: |
+#           terraform init \
+#           -backend-config="resource_group_name=tf-state-rg" \
+#           -backend-config="storage_account_name=tfstatepm99" \
+#           -backend-config="container_name=tfstate" \
+#           -backend-config="key=project1.tfstate"
+#         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      # 5. Terraform Plan
-      - name: "Terraform Plan"
-        run: terraform plan -out=tfplan
-        working-directory: ${{ env.TF_WORKING_DIR }}
+#       # 5. Terraform Plan
+#       - name: "Terraform Plan"
+#         run: terraform plan -out=tfplan
+#         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      # 6. Terraform Apply
-      - name: "Terraform Apply"
-        id: tf-apply # Give this step an ID
-        run: |
-          terraform apply -auto-approve tfplan
+#       # 6. Terraform Apply
+#       - name: "Terraform Apply"
+#         id: tf-apply # Give this step an ID
+#         run: |
+#           terraform apply -auto-approve tfplan
           
-          # Get the IP output and set it for the job
-          GATEWAY_IP=$(terraform output -raw app_gateway_public_ip)
-          echo "app_gateway_public_ip=$GATEWAY_IP" >> $GITHUB_OUTPUT
-        working-directory: ${{ env.TF_WORKING_DIR }}
+#           # Get the IP output and set it for the job
+#           GATEWAY_IP=$(terraform output -raw app_gateway_public_ip)
+#           echo "app_gateway_public_ip=$GATEWAY_IP" >> $GITHUB_OUTPUT
+#         working-directory: ${{ env.TF_WORKING_DIR }}
 
   ###########################################
   # JOB 2: Deploy Application

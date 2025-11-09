@@ -56,7 +56,7 @@ resource "random_password" "sql_pass" {
 }
 
 # The SQL Server
-resource "azurerm_sql_server" "main" {
+resource "azurerm_mssql_server" "main" {
   name                         = "${var.prefix}-sqlserver"
   resource_group_name          = azurerm_resource_group.main.name
   location                     = azurerm_resource_group.main.location
@@ -66,7 +66,7 @@ resource "azurerm_sql_server" "main" {
 }
 
 # The SQL Database
-resource "azurerm_sql_database" "main" {
+resource "azurerm_mssql_database" "main" {
   name                = "guestbook-db"
   resource_group_name = azurerm_resource_group.main.name
   server_name         = azurerm_sql_server.main.name
